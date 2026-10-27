@@ -1,0 +1,8 @@
+[out:json][timeout:300];
+area["boundary"="administrative"]["name"="Περιφερειακή Ενότητα Θεσσαλονίκης"]->.pe;
+rel(area.pe)["boundary"="administrative"]["admin_level"="7"]->.dimoi;
+.dimoi out tags geom;
+nwr(area.pe)["amenity"~"^(restaurant|cafe|bar|pub|fast_food|ice_cream|biergarten|food_court|nightclub)$"];
+out center tags;
+nwr(area.pe)["shop"~"^(bakery|pastry|coffee|confectionery)$"];
+out center tags;

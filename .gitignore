@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Μεγάλα ακατέργαστα δεδομένα που ξαναφέρνονται από εξωτερική πηγή
+data/ext/
+
+# Συστήματος
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Τοπικά ρυθμίσεις/εργαλεία
+.env
+*.log
+.firebase/
+node_modules/

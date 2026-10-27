@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Πού πάμε; Θεσσαλονίκη</title>
+<meta name="description" content="Χάρτης με εστιατόρια, καφέ και μπαρ στη Θεσσαλονίκη και τους γύρω δήμους.">
+<meta name="theme-color" content="#123B5C">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2C9.4 2 4 7.2 4 13.7 4 22.4 16 30 16 30s12-7.6 12-16.3C28 7.2 22.6 2 16 2z' fill='%23123B5C'/%3E%3Ccircle cx='16' cy='13.5' r='5' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700;800&display=swap&subset=greek" rel="stylesheet">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="vendor/MarkerCluster.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <aside id="panel" class="panel" aria-label="Αναζήτηση και αποτελέσματα">
+    <button id="grip" class="grip" aria-label="Άνοιγμα / κλείσιμο λίστας"><span></span></button>
+
+    <header class="brand">
+      <h1>Πού πάμε;</h1>
+      <p class="brand-sub">Φαγητό, καφές και ποτό στη Θεσσαλονίκη</p>
+    </header>
+
+    <div class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Όνομα, δρόμος ή κουζίνα" autocomplete="off" aria-label="Αναζήτηση">
+    </div>
+
+    <div class="cats" role="group" aria-label="Κατηγορίες">
+      <button class="cat on" data-cat="food" aria-pressed="true">
+        <span class="cat-ico"></span><span class="cat-name">Φαγητό</span><span class="cat-n"></span>
+      </button>
+      <button class="cat on" data-cat="coffee" aria-pressed="true">
+        <span class="cat-ico"></span><span class="cat-name">Καφές</span><span class="cat-n"></span>
+      </button>
+      <button class="cat on" data-cat="drink" aria-pressed="true">
+        <span class="cat-ico"></span><span class="cat-name">Ποτό</span><span class="cat-n"></span>
+      </button>
+    </div>
+
+    <div id="subs" class="subs" role="group" aria-label="Είδος καταστήματος"></div>
+
+    <div class="filters">
+      <select id="dimos" aria-label="Δήμος"><option value="">Όλοι οι δήμοι</option></select>
+      <label class="toggle"><input type="checkbox" id="openNow"><span>Ανοιχτά τώρα</span></label>
+      <label class="toggle"><input type="checkbox" id="withSocial"><span>Με social</span></label>
+      <label class="toggle fav-toggle"><input type="checkbox" id="favOnly"><span>♥ Αγαπημένα <i id="favN">0</i></span></label>
+    </div>
+
+    <div class="list-head">
+      <span id="count">Φόρτωση…</span>
+      <button id="locate" class="link-btn" type="button">Κοντά μου</button>
+    </div>
+
+    <ol id="list" class="list"></ol>
+    <section id="detail" class="detail" hidden></section>
+
+    <footer class="foot">
+      Δεδομένα: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a> (ODbL), <a href="https://overturemaps.org" target="_blank" rel="noopener">Overture Maps</a> (CDLA‑Permissive‑2.0)<span id="gemiCredit" hidden>, ΓΕΜΗ</span>. Τα αγαπημένα σου μένουν μόνο σε αυτή τη συσκευή.
+      <span id="updated"></span>
+    </footer>
+  </aside>
+
+  <main id="map" aria-label="Χάρτης"></main>
+</div>
+
+<script src="vendor/leaflet.js"></script>
+<script src="vendor/leaflet.markercluster.js"></script>
+<script src="config.js"></script>
+<script src="hours.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

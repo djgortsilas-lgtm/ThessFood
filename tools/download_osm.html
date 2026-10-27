@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Λήψη δεδομένων OSM</title>
+<style>
+  :root { --sea:#123B5C; --ink:#15222C; --muted:#5C6B76; --line:#DCE3E8; --ok:#1D7A46; --no:#A23B2A; }
+  body { margin:0; background:#F1F4F6; font:15px/1.5 system-ui, "Segoe UI", sans-serif; color:var(--ink); }
+  main { max-width:640px; margin:40px auto; padding:0 16px; }
+  h1 { color:var(--sea); font-size:26px; margin:0 0 6px; }
+  p { color:var(--muted); margin:0 0 18px; }
+  button { font:inherit; font-weight:700; padding:12px 18px; border-radius:10px; border:0; background:var(--sea); color:#fff; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  #log { margin-top:20px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; min-height:120px; white-space:pre-wrap; font:13px/1.6 Consolas, monospace; }
+  .ok { color:var(--ok); } .no { color:var(--no); }
+  #save { display:none; margin-left:8px; background:var(--ok); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Λήψη δεδομένων από το OpenStreetMap</h1>
+  <p>Κατεβάζει τα όρια των δήμων και όλα τα καταστήματα εστίασης, καφέ και μπαρ της Θεσσαλονίκης.
+     Δοκιμάζει αυτόματα διαφορετικούς servers αν κάποιος δεν απαντά. Διαρκεί 1–5 λεπτά.</p>
+  <button id="go">Λήψη δεδομένων</button>
+  <button id="save">Αποθήκευση osm.json</button>
+  <div id="log">Πάτα «Λήψη δεδομένων».</div>
+</main>
+<script>
+const SERVERS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+];
+const BBOX = "40.50,22.75,40.75,23.15";
+const QUERIES = {
+  "όρια δήμων": `[out:json][timeout:180];rel["boundary"="administrative"]["admin_level"="7"](${BBOX});out geom;`,
+  "καταστήματα": `[out:json][timeout:180];(nwr["amenity"~"^(restaurant|cafe|bar|pub|fast_food|ice_cream|biergarten|food_court|nightclub)$"](${BBOX});nwr["shop"~"^(bakery|pastry|coffee|confectionery)$"](${BBOX}););out center tags;`,
+};
+const log = (m, c) => { const d = document.getElementById("log"); d.innerHTML += `\n<span class="${c||""}">${m}</span>`; d.scrollTop = 1e9; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let result = null;
+
+async function runQuery(label, q) {
+  for (let round = 1; round <= 3; round++) {
+    for (const s of SERVERS) {
+      const host = new URL(s).host;
+      log(`${label}: δοκιμή στο ${host} (γύρος ${round})…`);
+      try {
+        const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 200000);
+        const r = await fetch(s, { method: "POST", body: "data=" + encodeURIComponent(q), signal: ctl.signal,
+                                   headers: { "Content-Type": "application/x-www-form-urlencoded" } });
+        clearTimeout(t);
+        const txt = await r.text();
+        if (!r.ok) { log(`  απάντηση ${r.status}`, "no"); continue; }
+        const j = JSON.parse(txt);
+        if (j.remark && !j.elements.length) { log(`  μήνυμα server: ${j.remark}`, "no"); continue; }
+        if (!j.elements.length) { log(`  0 στοιχεία — δοκιμάζω άλλον server`, "no"); continue; }
+        log(`  ✔ ${j.elements.length.toLocaleString("el-GR")} στοιχεία`, "ok");
+        return j;
+      } catch (e) { log(`  δεν απάντησε (${e.name === "AbortError" ? "timeout" : e.message})`, "no"); }
+      await sleep(3000);
+    }
+    log(`Περιμένω 20 δευτερόλεπτα και ξαναδοκιμάζω…`);
+    await sleep(20000);
+  }
+  throw new Error(label + ": κανένας server δεν έδωσε δεδομένα");
+}
+
+document.getElementById("go").onclick = async () => {
+  const go = document.getElementById("go"); go.disabled = true;
+  document.getElementById("log").textContent = "Ξεκινάω…";
+  try {
+    const parts = [];
+    for (const [label, q] of Object.entries(QUERIES)) parts.push(await runQuery(label, q));
+    result = { version: 0.6, osm3s: parts[1].osm3s, elements: parts.flatMap(p => p.elements) };
+    log(`\nΈτοιμο: ${result.elements.length.toLocaleString("el-GR")} στοιχεία συνολικά.`, "ok");
+    log(`Πάτα «Αποθήκευση osm.json» και αποθήκευσέ το στον φάκελο thess-food\\data\\raw`, "ok");
+    document.getElementById("save").style.display = "inline-block";
+  } catch (e) { log("\n" + e.message + ". Δοκίμασε ξανά σε λίγα λεπτά.", "no"); }
+  go.disabled = false;
+};
+
+document.getElementById("save").onclick = async () => {
+  const blob = new Blob([JSON.stringify(result)], { type: "application/json" });
+  if (window.showSaveFilePicker) {
+    try {
+      const h = await showSaveFilePicker({ suggestedName: "osm.json", types: [{ description: "JSON", accept: { "application/json": [".json"] } }] });
+      const w = await h.createWritable(); await w.write(blob); await w.close();
+      log("Αποθηκεύτηκε. Πες στο Claude ότι είναι έτοιμο.", "ok"); return;
+    } catch (e) { if (e.name === "AbortError") return; }
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "osm.json"; a.click();
+  log("Κατέβηκε στις Λήψεις. Μετακίνησέ το στο thess-food\\data\\raw.", "ok");
+};
+</script>
+</body>
+</html>
