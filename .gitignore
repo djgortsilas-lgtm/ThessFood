@@ -1,19 +1,21 @@
-# Python
+# --- ΜΥΣΤΙΚΑ: ποτέ στο GitHub ---
+data/gemi_key.txt
+.env
+
+# --- προσωπικά στοιχεία (ονόματα ιδιοκτητών, ΑΦΜ από ΓΕΜΗ) ---
+data/ext/gemi_raw.json
+data/ext/gemi_unmatched.csv
+data/ext/gemi_probe_old.py
+
+# --- μεγάλα / ενδιάμεσα αρχεία (ξανακατεβαίνουν σε κάθε ενημέρωση) ---
+data/ext/overture.json
+data/raw/
+data/*backup*.json
+
+# --- Python / Firebase / συστήματος ---
 __pycache__/
 *.pyc
-.venv/
-venv/
-
-# Μεγάλα ακατέργαστα δεδομένα που ξαναφέρνονται από εξωτερική πηγή
-data/ext/
-
-# Συστήματος
-Thumbs.db
-.DS_Store
-desktop.ini
-
-# Τοπικά ρυθμίσεις/εργαλεία
-.env
-*.log
 .firebase/
-node_modules/
+firebase-debug.log
+Thumbs.db
+desktop.ini

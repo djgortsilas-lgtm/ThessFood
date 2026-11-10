@@ -360,9 +360,6 @@ def main():
             "src": ["osm"],
             "osm": "https://www.openstreetmap.org/%s/%s" % (e["type"], e["id"]),
         }
-        if pid in gemi:
-            p["gemi"] = gemi[pid]
-            p["src"].append("gemi")
         if pid in overrides:
             p.update(overrides[pid])
             p["src"].append("manual")
@@ -377,6 +374,25 @@ def main():
                 p.update(overrides[p["id"]])
                 p["src"].append("manual")
         places = [p for p in places if not p.get("hidden")]
+
+    # ΓΕΜΗ (data/gemi.json από enrich_gemi.py): καρτέλα ΓΕΜΗ + συμπλήρωση στοιχείων όπου λείπουν
+    n_fill = 0
+    for p in places:
+        g = gemi.get(p["id"])
+        if not g:
+            continue
+        g = dict(g)
+        for k in ("phone", "email", "website"):
+            v = g.pop("_" + k, None)
+            if v and not p.get(k):
+                p[k] = clean_url(v) if k == "website" else v
+                n_fill += 1
+        g.pop("match", None)
+        p["gemi"] = g
+        if "gemi" not in p["src"]:
+            p["src"].append("gemi")
+    if gemi:
+        print("ΓΕΜΗ: %d σημεία με καρτέλα, %d στοιχεία συμπληρώθηκαν" % (sum(1 for p in places if p.get("gemi")), n_fill))
 
     # χειροκίνητες προσθήκες (ids που ξεκινούν με "x")
     for pid, ov in overrides.items():

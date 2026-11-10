@@ -260,7 +260,9 @@
     if (p.gemi) {
       const g = p.gemi;
       gemi = `<div class="box"><h3>Στοιχεία ΓΕΜΗ</h3>
+        ${g.title && g.title !== p.name ? `<p>Διακριτικός τίτλος: ${esc(g.title)}</p>` : ""}
         ${g.legal_name ? `<p>${esc(g.legal_name)}</p>` : ""}
+        ${g.legal_form && !g.legal_name ? `<p>${esc(g.legal_form)}</p>` : ""}
         ${g.gemi_no ? `<p>Αρ. ΓΕΜΗ: ${esc(g.gemi_no)}</p>` : ""}
         ${g.status ? `<p>Κατάσταση: ${esc(g.status)}</p>` : ""}
         ${g.founded ? `<p>Σύσταση: ${esc(g.founded)}</p>` : ""}

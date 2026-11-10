@@ -1,0 +1,86 @@
+# Εβδομαδιαία ενημέρωση δεδομένων (OSM + Overture + ΓΕΜΗ) και ανέβασμα στο GitHub Pages.
+# - Κάθε Κυριακή ~04:20 ώρα Ελλάδας τρέχει μόνο του.
+# - Χειροκίνητα: Actions -> "Ενημέρωση & ανέβασμα χάρτη" -> Run workflow.
+# - Σε κάθε push στο main ανεβαίνει η εφαρμογή ΧΩΡΙΣ νέα λήψη δεδομένων.
+# Αν κάποια λήψη αποτύχει, η σελίδα μένει ως είχε (και το GitHub στέλνει e-mail).
+# Αν αποτύχει ΜΟΝΟ το ΓΕΜΗ, κρατιούνται τα στοιχεία ΓΕΜΗ της προηγούμενης φοράς (data/gemi.json).
+name: Ενημέρωση & ανέβασμα χάρτη
+
+on:
+  schedule:
+    - cron: "23 2 * * 0"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  update-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        if: github.event_name != 'push'
+        with:
+          python-version: "3.12"
+
+      - name: Εγκατάσταση duckdb
+        if: github.event_name != 'push'
+        run: pip install duckdb
+
+      - name: Λήψη OpenStreetMap
+        if: github.event_name != 'push'
+        run: python -u scripts/fetch_osm.py
+
+      - name: Λήψη Overture Maps
+        if: github.event_name != 'push'
+        run: python -u scripts/fetch_overture.py
+
+      - name: Λήψη ΓΕΜΗ
+        id: gemi
+        if: github.event_name != 'push'
+        continue-on-error: true
+        env:
+          GEMI_API_KEY: ${{ secrets.GEMI_API_KEY }}
+        run: python -u scripts/fetch_gemi.py
+
+      - name: Build (1ο - νέα σημεία)
+        if: github.event_name != 'push'
+        run: python -u scripts/build_data.py
+
+      - name: Αντιστοίχιση ΓΕΜΗ
+        if: github.event_name != 'push' && steps.gemi.outcome == 'success'
+        run: python -u scripts/enrich_gemi.py
+
+      - name: Build (2ο - με ΓΕΜΗ)
+        if: github.event_name != 'push'
+        run: python -u scripts/build_data.py
+
+      - name: Αποθήκευση νέων δεδομένων στο repo
+        if: github.event_name != 'push'
+        run: |
+          git config user.name "thess-food bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/places.json data/gemi.json
+          git diff --cached --quiet || git commit -m "Εβδομαδιαία ενημέρωση δεδομένων $(date +%F)"
+          git push
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - id: deploy
+        uses: actions/deploy-pages@v4

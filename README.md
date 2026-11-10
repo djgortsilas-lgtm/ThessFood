@@ -78,3 +78,27 @@ python -m http.server 8000
 ## Αγαπημένα & GPS
 - Αγαπημένα: καρδιά στη λίστα και στην καρτέλα, φίλτρο «♥ Αγαπημένα». Αποθήκευση στο `localStorage` (κλειδί `tf_favs_v1`), μόνο στη συσκευή.
 - GPS: κουμπί κάτω από το zoom. 1ο πάτημα: εντοπισμός + ακολούθηση· αν σύρεις τον χάρτη, πάτημα = ξανακεντράρισμα· πάτημα ενώ ακολουθεί = σβήσιμο. Θέλει https (Firebase OK) ή localhost.
+
+
+## ΓΕΜΗ (session 3, 09/11/2026)
+Κλειδί στο `data/gemi_key.txt` (ΔΕΝ ανεβαίνει στο Firebase — μόνο ο φάκελος public/). Όριο API: 8 κλήσεις/λεπτό.
+Όλα μαζί: **gemi_update.bat** (λήψη → αντιστοίχιση → build). Ή βήμα-βήμα:
+1. `python scripts/fetch_gemi.py` → `data/ext/gemi_raw.json`: όλες οι ΕΝΕΡΓΕΣ επιχειρήσεις Π.Ε. Θεσσαλονίκης με ΚΑΔ 56.xx (εκτός catering 56.2x). ~9.600 εγγραφές, ~7 λεπτά.
+2. `python scripts/enrich_gemi.py` → `data/gemi.json` (id σημείου → στοιχεία) + `data/ext/gemi_unmatched.csv` (ΓΕΜΗ χωρίς σημείο).
+   Κανόνες: ίδιο τηλέφωνο → ίδιο e-mail → όνομα/διακριτικός τίτλος ≥0.85 + ίδιος δήμος + ίδια οδός/ΤΚ → όνομα ≥0.95 μοναδικό στον δήμο.
+   Τηλέφωνο/e-mail που μοιράζονται >3 σημεία (αλυσίδες) αγνοούνται. Αν η κύρια δραστηριότητα δεν είναι εστίαση/τρόφιμα, θέλει και ομοιότητα ονόματος.
+   Γενικά ονόματα (π.χ. «Θεσσαλονίκη», «Ουζερί») αντιστοιχίζονται μόνο με ίδια οδό.
+3. `python scripts/build_data.py` → καρτέλα «Στοιχεία ΓΕΜΗ» στο σημείο + συμπλήρωση τηλ./e-mail/site ΜΟΝΟ όπου λείπουν.
+Ιδιωτικότητα: στον χάρτη δεν περνούν ονόματα προσώπων ούτε ΑΦΜ· σε ατομικές επιχειρήσεις δεν φαίνεται η επωνυμία (ονοματεπώνυμο).
+Αντίγραφο πριν το ΓΕΜΗ: `data/places_before_gemi_backup.json`.
+
+
+## GitHub Pages + εβδομαδιαία αυτόματη ενημέρωση
+Workflow: `.github/workflows/update-and-deploy.yml`
+- Κάθε Κυριακή ~04:20 (ώρα Ελλάδας): fetch_osm.py → fetch_overture.py → fetch_gemi.py → build → enrich_gemi.py → build → commit `public/data/places.json` + `data/gemi.json` → ανέβασμα του φακέλου `public/` στο Pages.
+- Χειροκίνητα: GitHub → Actions → «Ενημέρωση & ανέβασμα χάρτη» → Run workflow.
+- Push στο main: ανεβαίνει η εφαρμογή χωρίς νέα λήψη.
+- Αν αποτύχει OSM/Overture: η σελίδα μένει ως είχε. Αν αποτύχει μόνο το ΓΕΜΗ: κρατιέται το προηγούμενο `data/gemi.json`.
+- Το κλειδί ΓΕΜΗ είναι GitHub Secret με όνομα `GEMI_API_KEY` (Settings → Secrets and variables → Actions).
+- `scripts/fetch_osm.py` = ό,τι κάνει το `tools/download_osm.html`, χωρίς browser.
+- Πριν δουλέψεις τοπικά: `git pull` (το bot γράφει νέα δεδομένα κάθε εβδομάδα).
