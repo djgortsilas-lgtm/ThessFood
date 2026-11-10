@@ -38,6 +38,7 @@ def main():
     rel_ = con.execute(q)
     cols = [d[0] for d in rel_.description]
     rows = [dict(zip(cols, r)) for r in rel_.fetchall()]
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({"release": rel, "places": rows}, ensure_ascii=False, default=str), encoding="utf-8")
     print(f"{len(rows)} places -> {OUT} ({OUT.stat().st_size//1024} KB)")
 
